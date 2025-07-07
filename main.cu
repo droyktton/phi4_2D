@@ -9,7 +9,7 @@
 #include <iomanip>  // <-- required for std::setprecision
 
 
-const int N = 1024;              // Grid size (NxN)
+const int N = 8192;              // Grid size (NxN)
 const int Nsteps = 5000;        // Time steps
 const float dt = 0.01f;
 const float gamma_ = 1.0f;
@@ -48,7 +48,15 @@ struct Laplacian2D {
         int j = idx % N;
         int ip = (i + 1) % N, im = (i - 1 + N) % N;
         int jp = (j + 1) % N, jm = (j - 1 + N) % N;
+        
+        #ifndef ANTIPERIODICX
         return phi[im*N + j] + phi[ip*N + j] + phi[i*N + jm] + phi[i*N + jp] - 4.0f * phi[idx];
+        #else
+        return 
+        ((i==0)?(-1.0f):(1.0f))*phi[im*N + j] + 
+        ((i==N-1)?(-1.0f):(1.0f))*phi[ip*N + j] + 
+        phi[i*N + jm] + phi[i*N + jp] - 4.0f * phi[idx];
+        #endif
     }
 };
 
@@ -85,6 +93,7 @@ int main() {
     thrust::device_vector<float> r_disorder(size);
     thrust::device_vector<float> laplace(size);
 
+    #ifdef RANDOMWITHFRAMEIC
     // Initialize phi randomly in [-1,1]
     thrust::transform(
         thrust::counting_iterator<int>(0),
@@ -104,6 +113,27 @@ int main() {
             else return dist(rng);
         }
     );
+    #endif
+    
+    #ifdef DWINTHEMIDDLEIC
+    // Initialize phi randomly in [-1,1]
+    thrust::transform(
+        thrust::counting_iterator<int>(0),
+        thrust::counting_iterator<int>(size),
+        phi.begin(),
+        [] __host__ __device__ (int n) {
+            thrust::default_random_engine rng(1234);
+            thrust::uniform_real_distribution<float> dist(-1.0f, 1.0f);
+            rng.discard(n);
+
+            int i = n / N;
+            int j = n % N;
+            bool isleft = (i < N/2);
+
+            return (isleft) ? 1.0f : -1.0f;        
+        }
+    );    
+    #endif
 
     // Initialize disorder r(x,y)
     thrust::transform(
