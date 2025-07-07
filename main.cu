@@ -98,6 +98,7 @@ int main() {
 
     #ifdef RANDOMWITHFRAMEIC
     // Initialize phi randomly in [-1,1]
+    std::cout << "random initial condition with frame" << std::endl;
     thrust::transform(
         thrust::counting_iterator<int>(0),
         thrust::counting_iterator<int>(size),
@@ -120,6 +121,7 @@ int main() {
     
     #ifdef DWINTHEMIDDLEIC
     // Initialize phi randomly in [-1,1]
+    std::cout << "flat domain wall in the middle" << std::endl;
     thrust::transform(
         thrust::counting_iterator<int>(0),
         thrust::counting_iterator<int>(size),
@@ -138,6 +140,8 @@ int main() {
     );    
     #endif
 
+    std::cout << "Disorder Amplitude " << DISORDERAMP << std::endl; 	
+
     // Initialize disorder r(x,y)
     thrust::transform(
         thrust::counting_iterator<int>(0),
@@ -151,9 +155,24 @@ int main() {
         }
     );
 
+    #ifdef MONITOR	
+    std::cout << "Monitor " << MONITOR << std::endl; 	
+    #endif
+
+    #ifdef TAUSQUAREWAVE	
+    std::cout << "TAUSQUAREWAVE " << TAUSQUAREWAVE << std::endl; 	
+    std::cout << "AMPSQUAREWAVE " << AMPSQUAREWAVE << std::endl; 	
+    #endif
+	
+
+
     thrust::host_vector<float> phi_host(size);
     //int nprint = 100;
     float t=0.0f;
+    #ifdef TAUSQUAREWAVE
+    h = (cos(2.0f*M_PI*t/TAUSQUAREWAVE)>0)?(1.0f):(-1.0f);
+    h *= AMPSQUAREWAVE;
+    #endif
 
     for (int step = 0; step < Nsteps; ++step) {
 
