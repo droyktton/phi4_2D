@@ -87,6 +87,9 @@ struct PhiUpdate {
 };
 
 int main() {
+
+    std::ofstream monitor_out("monitor.dat");
+
     int size = N * N;
     thrust::device_vector<float> phi(size);
     thrust::device_vector<float> phi_new(size);
@@ -153,6 +156,19 @@ int main() {
     float t=0.0f;
 
     for (int step = 0; step < Nsteps; ++step) {
+
+        #ifdef MONITOR
+        if(step % MONITOR == 0)
+        {
+          float mag = thrust::count_if(
+            phi.begin(), phi.end(),
+            [] __device__ (float x) {
+              return x > 0.0f;
+            }
+          );
+          monitor_out << t << " " << mag << std::endl;
+        }
+        #endif
 
         #ifdef PRINTCONFIGS
         if (step % PRINTCONFIGS == 0) {
