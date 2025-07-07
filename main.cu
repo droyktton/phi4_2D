@@ -150,13 +150,16 @@ int main() {
 
     thrust::host_vector<float> phi_host(size);
     int nprint = 100;
+    float t=0.0f;
 
     for (int step = 0; step < Nsteps; ++step) {
 
-        if (step % nprint == 0) {
+        #ifdef PRINTCONFIGS
+        if (step % PRINTCONFIGS == 0) {
             thrust::copy(phi.begin(), phi.end(), phi_host.begin());  // No new allocation
             write_field_to_file(phi_host, N, N, step);
         }
+        #endif
 
         Laplacian2D lap_op{N, thrust::raw_pointer_cast(phi.data())};
         thrust::transform(
@@ -165,6 +168,11 @@ int main() {
             laplace.begin(),
             lap_op
         );
+
+        #ifdef TAUSQUAREWAVE
+        h = (cos(2.0f*M_PI*t/TAUSQUAREWAVE)>0)?(1.0f):(-1.0f);
+        h = h*AMPSQUAREWAVE;
+        #endif
 
         PhiUpdate update{c, epsilon0, gamma_, dt, h, noise_amp,
                          thrust::raw_pointer_cast(laplace.data()),
@@ -181,6 +189,8 @@ int main() {
 
         // Swap pointers
         thrust::swap(phi, phi_new);
+
+        t+=dt;
     }
 
     // Optional: copy to host and save
