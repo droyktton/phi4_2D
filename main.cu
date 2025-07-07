@@ -152,7 +152,7 @@ int main() {
     );
 
     thrust::host_vector<float> phi_host(size);
-    int nprint = 100;
+    //int nprint = 100;
     float t=0.0f;
 
     for (int step = 0; step < Nsteps; ++step) {
