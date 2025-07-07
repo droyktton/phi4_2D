@@ -9,15 +9,15 @@
 #include <iomanip>  // <-- required for std::setprecision
 
 
-const int N = 8192;              // Grid size (NxN)
-const int Nsteps = 5000;        // Time steps
+const int N = 1024;              // Grid size (NxN)
+const int Nsteps = 15000;        // Time steps
 const float dt = 0.01f;
 const float gamma_ = 1.0f;
 const float c = 1.0f;
 const float epsilon0 = 1.0f;
 float h = 0.0f;
-const float noise_amp = 0.0f;
-const float disorder_amp = 0.0f;
+float noise_amp = 0.0f;
+float disorder_amp = 0.0f;
 
 
 void write_field_to_file(const thrust::host_vector<float>& phi_host,
