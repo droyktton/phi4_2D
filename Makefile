@@ -11,8 +11,9 @@ FLAGS = --expt-extended-lambda -lcufft -std=c++17 -lstdc++fs -O2 \
 -gencode arch=compute_86,code=sm_86 
 #-gencode arch=compute_89,code=sm_89 
 
+ACSQUAREWAVEFLAT = -DANTIPERIODICX -DDWINTHEMIDDLEIC -DTAUSQUARE=50 -DAMPSQUARE=0.05
 
-PARAMS = 
+PARAMS = $(ACSQUAREWAVEFLAT)
 
 LDFLAGS = -L/opt/nvidia/hpc_sdk/Linux_x86_64/23.7/math_libs/12.2/lib64 
 
