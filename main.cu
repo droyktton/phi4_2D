@@ -15,7 +15,7 @@ const float dt = 0.01f;
 const float gamma_ = 1.0f;
 const float c = 1.0f;
 const float epsilon0 = 1.0f;
-const float h = 0.0f;
+float h = 0.0f;
 const float noise_amp = 0.0f;
 const float disorder_amp = 0.0f;
 
@@ -133,7 +133,7 @@ int main() {
             //int j = n % N;
             bool isleft = (i < N/2);
 
-            return (isleft) ? 1.0f : -1.0f;        
+            return ((isleft) ? (1.0f) : (-1.0f));        
         }
     );    
     #endif
