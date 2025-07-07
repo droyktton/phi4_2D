@@ -145,7 +145,7 @@ int main() {
         r_disorder.begin(),
         [] __host__ __device__ (int i) {
             thrust::default_random_engine rng(5678);
-            thrust::uniform_real_distribution<float> dist(-disorder_amp, disorder_amp);
+            thrust::uniform_real_distribution<float> dist(-DISORDERAMP,DISORDERAMP);
             rng.discard(i);
             return dist(rng);
         }
