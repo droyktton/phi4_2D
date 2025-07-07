@@ -130,7 +130,7 @@ int main() {
             rng.discard(n);
 
             int i = n / N;
-            int j = n % N;
+            //int j = n % N;
             bool isleft = (i < N/2);
 
             return (isleft) ? 1.0f : -1.0f;        
