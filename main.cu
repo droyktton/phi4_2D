@@ -166,7 +166,7 @@ int main() {
               return x > 0.0f;
             }
           );
-          monitor_out << t << " " << mag << std::endl;
+          monitor_out << t << " " << mag/(N*N) << std::endl;
         }
         #endif
 
