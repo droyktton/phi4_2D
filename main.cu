@@ -3,6 +3,8 @@
 #include <thrust/transform.h>
 #include <thrust/random.h>
 #include <thrust/functional.h>
+#include <thrust/functional.h>
+#include <thrust/count.h>
 #include <cmath>
 #include <iostream>
 #include <fstream>
@@ -85,6 +87,24 @@ struct PhiUpdate {
         return phi + dphi;
     }
 };
+
+float positives_in_region(const thrust::device_vector<float>& phi, int imin, int imax, int jmin, int jmax) {
+    
+    int size = N*N;
+    // Count the number of positive values in phi
+    return thrust::count_if(
+        thrust::make_zip_iterator(thrust::make_tuple(phi.begin(), thrust::make_counting_iterator(0))), 
+        thrust::make_zip_iterator(thrust::make_tuple(phi.end(), thrust::make_counting_iterator(size))), 
+        [imin, imax, jmin, jmax] __device__ (const thrust::tuple<float, int>& t) {
+            float x = thrust::get<0>(t);
+            int idx = thrust::get<1>(t);
+            int i = idx / N;
+            int j = idx % N;
+            return (x > 0.0f && i >= imin && i < imax && j >= jmin && j < jmax);
+        }
+    );
+} 
+ 
 
 int main(int argc, char **argv) {
 
@@ -180,18 +200,18 @@ int main(int argc, char **argv) {
     h *= ampsquarewave; //AMPSQUAREWAVE;
     #endif
 
+
+    float prevmag = positives_in_region(phi, 10, N-10, 0, N);
+    std::cout << "Initial magnetization: " << prevmag << std::endl;
+
     for (int step = 0; step < Nsteps; ++step) {
 
         #ifdef MONITOR
         if(step % MONITOR == 0)
         {
-          float mag = thrust::count_if(
-            phi.begin(), phi.end(),
-            [] __device__ (float x) {
-              return x > 0.0f;
-            }
-          );
-          monitor_out << t << " " << mag/(N*N) << " " << h << std::endl;
+          float mag = positives_in_region(phi, 10, N-10, 0, N);
+          monitor_out << t << " " << (mag-prevmag)/(N*dt*MONITOR) << " " << h << std::endl;
+          prevmag = mag;
         }
         #endif
 
@@ -210,8 +230,8 @@ int main(int argc, char **argv) {
             lap_op
         );
 
-	#ifdef TAUSQUAREWAVE
-    	h = (cos(2.0f*M_PI*t/tausquarewave)>0)?(1.0f):(-1.0f);
+	    #ifdef TAUSQUAREWAVE
+    	h = (sin(2.0f*M_PI*t/tausquarewave)>0)?(1.0f):(-1.0f);
     	h *= ampsquarewave; //AMPSQUAREWAVE;
     	#endif
 
