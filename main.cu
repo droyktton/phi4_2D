@@ -10,7 +10,7 @@
 
 
 const int N = 1024;              // Grid size (NxN)
-const int Nsteps = 15000;        // Time steps
+const int Nsteps = 50000;        // Time steps
 const float dt = 0.01f;
 const float gamma_ = 1.0f;
 const float c = 1.0f;
@@ -86,7 +86,13 @@ struct PhiUpdate {
     }
 };
 
-int main() {
+int main(int argc, char **argv) {
+
+    #ifdef TAUSQUAREWAVE
+    float tausquarewave = atof(argv[1]);
+    float ampsquarewave = atof(argv[2]);
+    std::cout << "square wave = (" << tausquarewave << "," << ampsquarewave << ")" << std::endl;
+    #endif
 
     std::ofstream monitor_out("monitor.dat");
 
@@ -159,10 +165,10 @@ int main() {
     std::cout << "Monitor " << MONITOR << std::endl; 	
     #endif
 
-    #ifdef TAUSQUAREWAVE	
+    /*#ifdef TAUSQUAREWAVE	
     std::cout << "TAUSQUAREWAVE " << TAUSQUAREWAVE << std::endl; 	
     std::cout << "AMPSQUAREWAVE " << AMPSQUAREWAVE << std::endl; 	
-    #endif
+    #endif*/
 	
 
 
@@ -170,8 +176,8 @@ int main() {
     //int nprint = 100;
     float t=0.0f;
     #ifdef TAUSQUAREWAVE
-    h = (cos(2.0f*M_PI*t/TAUSQUAREWAVE)>0)?(1.0f):(-1.0f);
-    h *= AMPSQUAREWAVE;
+    h = (cos(2.0f*M_PI*t/tausquarewave)>0)?(1.0f):(-1.0f);
+    h *= ampsquarewave; //AMPSQUAREWAVE;
     #endif
 
     for (int step = 0; step < Nsteps; ++step) {
@@ -204,10 +210,10 @@ int main() {
             lap_op
         );
 
-        #ifdef TAUSQUAREWAVE
-        h = (cos(2.0f*M_PI*t/TAUSQUAREWAVE)>0)?(1.0f):(-1.0f);
-        h = h*AMPSQUAREWAVE;
-        #endif
+	#ifdef TAUSQUAREWAVE
+    	h = (cos(2.0f*M_PI*t/tausquarewave)>0)?(1.0f):(-1.0f);
+    	h *= ampsquarewave; //AMPSQUAREWAVE;
+    	#endif
 
         PhiUpdate update{c, epsilon0, gamma_, dt, h, noise_amp,
                          thrust::raw_pointer_cast(laplace.data()),
