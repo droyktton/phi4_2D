@@ -62,6 +62,22 @@ struct Laplacian2D {
     }
 };
 
+struct GradientSquared2D {
+    int N;
+    const float* phi;
+    __host__ __device__
+    float operator()(int idx) const {
+        int i = idx / N;
+        int j = idx % N;
+        int ip = (i + 1) % N, im = (i - 1 + N) % N;
+        int jp = (j + 1) % N, jm = (j - 1 + N) % N;
+        
+        return    (phi[im*N + j] - phi[ip*N + j])*(phi[im*N + j] - phi[ip*N + j]) 
+                + (phi[i*N + jp] - phi[i*N + jm])*(phi[i*N + jp] - phi[i*N + jm]);
+    }
+};
+
+
 // Nonlinear and noise update
 struct PhiUpdate {
     float c, epsilon0, gamma_, dt, h, noise_amp;
@@ -103,6 +119,22 @@ float positives_in_region(const thrust::device_vector<float>& phi, int imin, int
             return (x > 0.0f && i >= imin && i < imax && j >= jmin && j < jmax);
         }
     );
+} 
+ 
+float ElasticEnergy(const thrust::device_vector<float>& phi) {
+    int size = N * N;
+    float energy = 0.0f;
+
+    GradientSquared2D grad2_op{N, thrust::raw_pointer_cast(phi.data())};
+    energy = thrust::transform_reduce(
+            thrust::counting_iterator<int>(0),
+            thrust::counting_iterator<int>(size),
+            grad2_op,
+            0.0f,
+            thrust::plus<float>()
+    );
+    energy *= 0.5f; // Factor of 1/2 for the elastic energy
+    return energy;
 } 
  
 
@@ -210,7 +242,8 @@ int main(int argc, char **argv) {
         if(step % MONITOR == 0)
         {
           float mag = positives_in_region(phi, 10, N-10, 0, N);
-          monitor_out << t << " " << (mag-prevmag)/(N*dt*MONITOR) << " " << h << std::endl;
+          float elastic_energy = ElasticEnergy(phi);  
+          monitor_out << t << " " << (mag-prevmag)/(N*dt*MONITOR) << " " << h << " " << elastic_energy << std::endl;
           prevmag = mag;
         }
         #endif
