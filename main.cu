@@ -12,7 +12,7 @@
 
 
 const int N = 1024;              // Grid size (NxN)
-const int Nsteps = 50000;        // Time steps
+int Nsteps = 50000;        // Time steps
 const float dt = 0.01f;
 const float gamma_ = 1.0f;
 const float c = 1.0f;
@@ -236,14 +236,21 @@ int main(int argc, char **argv) {
     float prevmag = positives_in_region(phi, 10, N-10, 0, N);
     std::cout << "Initial magnetization: " << prevmag << std::endl;
 
+    float Vac=0.0f;
+
+    Nsteps = (20.f*tausquarewave/dt);
+
     for (int step = 0; step < Nsteps; ++step) {
 
         #ifdef MONITOR
         if(step % MONITOR == 0)
         {
           float mag = positives_in_region(phi, 10, N-10, 0, N);
-          float elastic_energy = ElasticEnergy(phi);  
+          float elastic_energy = ElasticEnergy(phi);
+
           monitor_out << t << " " << (mag-prevmag)/(N*dt*MONITOR) << " " << h << " " << elastic_energy << std::endl;
+          Vac += h * (mag-prevmag)/(N*dt*MONITOR);
+          
           prevmag = mag;
         }
         #endif
@@ -290,7 +297,8 @@ int main(int argc, char **argv) {
     // Optional: copy to host and save
     thrust::host_vector<float> result = phi;
     // Save result here if needed...
-
-    std::cout << "Simulation complete.\n";
+    
+    std::cout << ampsquarewave << " " << Vac*MONITOR/(Nsteps*ampsquarewave) << " " << DISORDERAMP << std::endl;
+    //std::cout << "Simulation complete.\n";
     return 0;
 }
