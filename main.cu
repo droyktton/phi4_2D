@@ -154,10 +154,12 @@ float ElasticEnergy(const thrust::device_vector<float>& phi) {
 
 int main(int argc, char **argv) {
 
+    std::ofstream logout("log.txt");
+
     #ifdef TAUSQUAREWAVE
     float tausquarewave = atof(argv[1]);
     float ampsquarewave = atof(argv[2]);
-    std::cout << "square wave = (" << tausquarewave << "," << ampsquarewave << ")" << std::endl;
+    logout << "square wave = (" << tausquarewave << "," << ampsquarewave << ")" << std::endl;
     #endif
 
     std::ofstream monitor_out("monitor.dat");
@@ -170,7 +172,7 @@ int main(int argc, char **argv) {
 
     #ifdef RANDOMWITHFRAMEIC
     // Initialize phi randomly in [-1,1]
-    std::cout << "random initial condition with frame" << std::endl;
+    logout << "random initial condition with frame" << std::endl;
     thrust::transform(
         thrust::counting_iterator<int>(0),
         thrust::counting_iterator<int>(size),
@@ -193,7 +195,7 @@ int main(int argc, char **argv) {
     
     #ifdef DWINTHEMIDDLEIC
     // Initialize phi randomly in [-1,1]
-    std::cout << "flat domain wall in the middle" << std::endl;
+    logout << "flat domain wall in the middle" << std::endl;
     thrust::transform(
         thrust::counting_iterator<int>(0),
         thrust::counting_iterator<int>(size),
@@ -212,7 +214,30 @@ int main(int argc, char **argv) {
     );    
     #endif
 
-    std::cout << "Disorder Amplitude " << DISORDERAMP << std::endl; 	
+
+    #ifdef DWCIRCULARIC
+    // Initialize phi randomly in [-1,1]
+    logout << "flat domain wall in the middle" << std::endl;
+    thrust::transform(
+        thrust::counting_iterator<int>(0),
+        thrust::counting_iterator<int>(size),
+        phi.begin(),
+        [] __host__ __device__ (int n) {
+            //thrust::default_random_engine rng(1234);
+            //thrust::uniform_real_distribution<float> dist(-1.0f, 1.0f);
+            //rng.discard(n);
+
+            int i = n / N;
+            int j = n % N;
+            bool isincircle = ((i-N/2)*(i-N/2)+(j-N/2)*(j-N/2) < DWCIRCULARIC);
+
+            return ((isincircle) ? (1.0f) : (-1.0f));        
+        }
+    );    
+    #endif
+
+
+    logout << "Disorder Amplitude " << DISORDERAMP << std::endl; 	
 
     // Initialize disorder r(x,y)
     thrust::transform(
@@ -228,7 +253,7 @@ int main(int argc, char **argv) {
     );
 
     #ifdef MONITOR	
-    std::cout << "Monitor " << MONITOR << std::endl; 	
+    logout << "Monitor " << MONITOR << std::endl; 	
     #endif
 
     /*#ifdef TAUSQUAREWAVE	
@@ -262,13 +287,14 @@ int main(int argc, char **argv) {
 
 
     float prevmag = positives_in_region(phi, 10, N-10, 0, N);
-    std::cout << "Initial magnetization: " << prevmag << std::endl;
+    logout << "Initial magnetization: " << prevmag << std::endl;
 
     float Vac=0.0f;
 
     Nsteps = (20.f*tausquarewave/dt);
     
     bool changesign = false;
+    int countsign = 0;
 
     for (int step = 0; step < Nsteps; ++step) {
 
@@ -297,14 +323,15 @@ int main(int argc, char **argv) {
 	    float hold = h;
     	h = (sin(2.0f*M_PI*t/tausquarewave)>0)?(1.0f):(-1.0f);
     	h *= ampsquarewave; //AMPSQUAREWAVE;
-    	if(h*hold < 0.0f) changesign = true;
+    	if(h*hold < 0.0f){changesign = true; countsign++;} 
+    	else changesign = false;
     	#endif
 
         #ifdef PRINTCONFIGS
         //if (step % PRINTCONFIGS == 0) {
         if (changesign == true) {
             thrust::copy(phi.begin(), phi.end(), phi_host.begin());  // No new allocation
-            write_field_to_file(phi_host, N, N, step);
+            write_field_to_file(phi_host, N, N, countsign);
         }
         #endif
 
