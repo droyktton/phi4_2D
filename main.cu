@@ -13,7 +13,7 @@
 
 const int N = 1024;              // Grid size (NxN)
 int Nsteps = 50000;        // Time steps
-const float dt = 0.01f;
+const float dt = 0.10f;
 const float gamma_ = 1.0f;
 const float c = 1.0f;
 const float epsilon0 = 1.0f;
@@ -40,6 +40,20 @@ void write_field_to_file(const thrust::host_vector<float>& phi_host,
     file.close();
 }
 
+void write_matrix_to_file(const thrust::host_vector<float>& x,
+                         int Nx, int Ny, std::ofstream &file) {
+    
+    file << std::fixed << std::setprecision(6);  // Optional: formatting
+
+    for (int j = 0; j < Ny; ++j) {
+        for (int i = 0; i < Nx; ++i) {
+            file << x[j * Nx + i] << " ";
+        }
+        file << "\n";
+    }
+
+    file.close();
+}
 
 struct Laplacian2D {
     int N;
@@ -223,6 +237,20 @@ int main(int argc, char **argv) {
     #endif*/
 	
 
+    #ifdef PRINTCONFIGS
+    thrust::host_vector<float> x(r_disorder.size());
+    
+    std::ofstream out1("disorder.dat");
+    thrust::copy(r_disorder.begin(), r_disorder.end(), x.begin());  // No new allocation
+    write_matrix_to_file(x, N, N, out1);
+    
+    std::ofstream out2("initial.dat");
+    thrust::copy(phi.begin(), phi.end(), x.begin());  // No new allocation
+    write_matrix_to_file(x, N, N, out2);
+    #endif
+
+
+
 
     thrust::host_vector<float> phi_host(size);
     //int nprint = 100;
@@ -239,6 +267,8 @@ int main(int argc, char **argv) {
     float Vac=0.0f;
 
     Nsteps = (20.f*tausquarewave/dt);
+    
+    bool changesign = false;
 
     for (int step = 0; step < Nsteps; ++step) {
 
@@ -255,13 +285,6 @@ int main(int argc, char **argv) {
         }
         #endif
 
-        #ifdef PRINTCONFIGS
-        if (step % PRINTCONFIGS == 0) {
-            thrust::copy(phi.begin(), phi.end(), phi_host.begin());  // No new allocation
-            write_field_to_file(phi_host, N, N, step);
-        }
-        #endif
-
         Laplacian2D lap_op{N, thrust::raw_pointer_cast(phi.data())};
         thrust::transform(
             thrust::counting_iterator<int>(0),
@@ -271,10 +294,21 @@ int main(int argc, char **argv) {
         );
 
 	    #ifdef TAUSQUAREWAVE
+	    float hold = h;
     	h = (sin(2.0f*M_PI*t/tausquarewave)>0)?(1.0f):(-1.0f);
     	h *= ampsquarewave; //AMPSQUAREWAVE;
+    	if(h*hold < 0.0f) changesign = true;
     	#endif
 
+        #ifdef PRINTCONFIGS
+        //if (step % PRINTCONFIGS == 0) {
+        if (changesign == true) {
+            thrust::copy(phi.begin(), phi.end(), phi_host.begin());  // No new allocation
+            write_field_to_file(phi_host, N, N, step);
+        }
+        #endif
+
+        
         PhiUpdate update{c, epsilon0, gamma_, dt, h, noise_amp,
                          thrust::raw_pointer_cast(laplace.data()),
                          thrust::raw_pointer_cast(phi.data()),
