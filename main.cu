@@ -217,7 +217,7 @@ int main(int argc, char **argv) {
 
     #ifdef DWCIRCULARIC
     // Initialize phi randomly in [-1,1]
-    logout << "flat domain wall in the middle" << std::endl;
+    logout << "circular domain wall in the middle" << std::endl;
     thrust::transform(
         thrust::counting_iterator<int>(0),
         thrust::counting_iterator<int>(size),
@@ -229,7 +229,7 @@ int main(int argc, char **argv) {
 
             int i = n / N;
             int j = n % N;
-            bool isincircle = ((i-N/2)*(i-N/2)+(j-N/2)*(j-N/2) < DWCIRCULARIC);
+            bool isincircle = ((i-N/2)*(i-N/2)+(j-N/2)*(j-N/2) < DWCIRCULARIC*DWCIRCULARIC);
 
             return ((isincircle) ? (1.0f) : (-1.0f));        
         }
@@ -301,10 +301,17 @@ int main(int argc, char **argv) {
         #ifdef MONITOR
         if(step % MONITOR == 0)
         {
+
+	  #ifdef DWINTHEMIDDLEIC
           float mag = positives_in_region(phi, 10, N-10, 0, N);
+	  #else
+          float mag = positives_in_region(phi, 0, N, 0, N);
+	  #endif
+
+
           float elastic_energy = ElasticEnergy(phi);
 
-          monitor_out << t << " " << (mag-prevmag)/(N*dt*MONITOR) << " " << h << " " << elastic_energy << std::endl;
+          monitor_out << t << " " << (mag-prevmag)/(N*dt*MONITOR) << " " << h << " " << elastic_energy << " " << mag << std::endl;
           Vac += h * (mag-prevmag)/(N*dt*MONITOR);
           
           prevmag = mag;
