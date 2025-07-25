@@ -64,13 +64,13 @@ struct Laplacian2D {
         int j = idx % N;
         int ip = (i + 1) % N, im = (i - 1 + N) % N;
         int jp = (j + 1) % N, jm = (j - 1 + N) % N;
-        
+
         #ifndef ANTIPERIODICX
         return phi[im*N + j] + phi[ip*N + j] + phi[i*N + jm] + phi[i*N + jp] - 4.0f * phi[idx];
         #else
-        return 
-        ((i==0)?(-1.0f):(1.0f))*phi[im*N + j] + 
-        ((i==N-1)?(-1.0f):(1.0f))*phi[ip*N + j] + 
+        return
+        ((i==0)?(-1.0f):(1.0f))*phi[im*N + j] +
+        ((i==N-1)?(-1.0f):(1.0f))*phi[ip*N + j] +
         phi[i*N + jm] + phi[i*N + jp] - 4.0f * phi[idx];
         #endif
     }
@@ -252,7 +252,7 @@ int main(int argc, char **argv) {
         }
     );
 
-    #ifdef MONITOR	
+    #ifdef MONITOR
     logout << "Monitor " << MONITOR << std::endl; 	
     #endif
 
@@ -281,8 +281,7 @@ int main(int argc, char **argv) {
     //int nprint = 100;
     float t=0.0f;
     #ifdef TAUSQUAREWAVE
-    h = (cos(2.0f*M_PI*t/tausquarewave)>0)?(1.0f):(-1.0f);
-    h *= ampsquarewave; //AMPSQUAREWAVE;
+    h = 1.0f*ampsquarewave; //AMPSQUAREWAVE;
     #endif
 
 
@@ -292,8 +291,8 @@ int main(int argc, char **argv) {
     float Vac=0.0f;
 
     Nsteps = (20.f*tausquarewave/dt);
-    
-    bool changesign = false;
+
+    bool changesign = true;
     int countsign = 0;
 
     for (int step = 0; step < Nsteps; ++step) {
@@ -311,9 +310,9 @@ int main(int argc, char **argv) {
 
           float elastic_energy = ElasticEnergy(phi);
 
-          monitor_out << t << " " << (mag-prevmag)/(N*dt*MONITOR) << " " << h << " " << elastic_energy << " " << mag << std::endl;
+          monitor_out << t << " " << (mag-prevmag)/(N*dt*MONITOR) << " " << h << " " << elastic_energy << " " << mag << " " << changesign << std::endl;
           Vac += h * (mag-prevmag)/(N*dt*MONITOR);
-          
+
           prevmag = mag;
         }
         #endif
@@ -326,13 +325,6 @@ int main(int argc, char **argv) {
             lap_op
         );
 
-	    #ifdef TAUSQUAREWAVE
-	    float hold = h;
-    	h = (sin(2.0f*M_PI*t/tausquarewave)>0)?(1.0f):(-1.0f);
-    	h *= ampsquarewave; //AMPSQUAREWAVE;
-    	if(h*hold < 0.0f){changesign = true; countsign++;} 
-    	else changesign = false;
-    	#endif
 
         #ifdef PRINTCONFIGS
         //if (step % PRINTCONFIGS == 0) {
@@ -342,7 +334,7 @@ int main(int argc, char **argv) {
         }
         #endif
 
-        
+
         PhiUpdate update{c, epsilon0, gamma_, dt, h, noise_amp,
                          thrust::raw_pointer_cast(laplace.data()),
                          thrust::raw_pointer_cast(phi.data()),
@@ -360,6 +352,14 @@ int main(int argc, char **argv) {
         thrust::swap(phi, phi_new);
 
         t+=dt;
+
+	#ifdef TAUSQUAREWAVE
+	float hold = h;
+    	h = (sin(2.0f*M_PI*t/tausquarewave)>0)?(1.0f):(-1.0f);
+    	h *= ampsquarewave; //AMPSQUAREWAVE;
+    	if(h*hold < 0.0f){changesign = true; countsign++;}
+    	else changesign = false;
+    	#endif
     }
 
     // Optional: copy to host and save
