@@ -238,7 +238,6 @@ int main(int argc, char **argv) {
 
 
     logout << "Disorder Amplitude " << DISORDERAMP << std::endl; 	
-
     // Initialize disorder r(x,y)
     thrust::transform(
         thrust::counting_iterator<int>(0),
@@ -247,6 +246,7 @@ int main(int argc, char **argv) {
         [] __host__ __device__ (int i) {
             thrust::default_random_engine rng(5678);
             thrust::uniform_real_distribution<float> dist(-DISORDERAMP,DISORDERAMP);
+            //thrust::uniform_real_distribution<float> dist(0.0,DISORDERAMP); //BUG pablo
             rng.discard(i);
             return dist(rng);
         }
