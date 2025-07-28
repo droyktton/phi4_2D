@@ -27,7 +27,7 @@ PARAMS = $(ACSQUAREWAVEFLAT)
 LDFLAGS = -L/opt/nvidia/hpc_sdk/Linux_x86_64/23.7/math_libs/12.2/lib64 
 
 
-phi4: main.cu
+phi4: main.cu Makefile
 	$(CXX) $(FLAGS) $(PARAMS) main.cu -o phi4 $(LDFLAGS) $(INCLUDES) 
 
 
@@ -35,4 +35,4 @@ update_git:
 	git add *.cu Makefile README.md; git commit -m "program update"; git push
 
 clean:
-	rm phi4
+	rm -f phi4

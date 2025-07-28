@@ -403,7 +403,7 @@ int main(int argc, char **argv) {
     thrust::host_vector<float> result = phi;
     // Save result here if needed...
     
-    std::cout << ampsquarewave << " " << Vac*MONITOR/(Nsteps*ampsquarewave) << " " << DISORDERAMP << std::endl;
+    std::cout << ampsquarewave << " " << Vac*MONITOR/(Nsteps*ampsquarewave) << " " << DISORDERAMP << " " << tausquarewave << std::endl;
     //std::cout << "Simulation complete.\n";
     return 0;
 }
