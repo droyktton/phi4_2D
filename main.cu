@@ -280,18 +280,52 @@ int main(int argc, char **argv) {
     thrust::host_vector<float> phi_host(size);
     //int nprint = 100;
     float t=0.0f;
-    #ifdef TAUSQUAREWAVE
-    h = 1.0f*ampsquarewave; //AMPSQUAREWAVE;
-    #endif
-
 
     float prevmag = positives_in_region(phi, 10, N-10, 0, N);
     logout << "Initial magnetization: " << prevmag << std::endl;
 
     float Vac=0.0f;
 
-    Nsteps = (20.f*tausquarewave/dt);
 
+    // equilibration
+    h=0.0;
+    int Neq = (1.f*tausquarewave/dt);
+    for (int step = 0; step < Neq; ++step) {
+    
+        Laplacian2D lap_op{N, thrust::raw_pointer_cast(phi.data())};
+        thrust::transform(
+            thrust::counting_iterator<int>(0),
+            thrust::counting_iterator<int>(size),
+            laplace.begin(),
+            lap_op
+        );
+        
+        PhiUpdate update{c, epsilon0, gamma_, dt, h, noise_amp,
+                         thrust::raw_pointer_cast(laplace.data()),
+                         thrust::raw_pointer_cast(phi.data()),
+                         thrust::raw_pointer_cast(r_disorder.data()),
+                         static_cast<unsigned int>(step * 7919)};
+
+        thrust::transform(
+            thrust::counting_iterator<int>(0),
+            thrust::counting_iterator<int>(size),
+            phi_new.begin(),
+            update
+        );
+
+        // Swap pointers
+        thrust::swap(phi, phi_new);
+
+        t+=dt;        
+    }
+    
+    
+    // run...
+    #ifdef TAUSQUAREWAVE
+    h = 1.0f*ampsquarewave; //AMPSQUAREWAVE;
+    #endif
+
+    Nsteps = (20.f*tausquarewave/dt);
     bool changesign = true;
     int countsign = 0;
 
@@ -310,7 +344,10 @@ int main(int argc, char **argv) {
 
           float elastic_energy = ElasticEnergy(phi);
 
-          monitor_out << t << " " << (mag-prevmag)/(N*dt*MONITOR) << " " << h << " " << elastic_energy << " " << mag << " " << changesign << std::endl;
+          monitor_out << t << " " << (mag-prevmag)/(N*dt*MONITOR) << " " 
+          << h << " " << elastic_energy << " " << mag << " " << changesign << " " 
+          << countsign%2 << std::endl;
+          
           Vac += h * (mag-prevmag)/(N*dt*MONITOR);
 
           prevmag = mag;
@@ -353,8 +390,8 @@ int main(int argc, char **argv) {
 
         t+=dt;
 
-	#ifdef TAUSQUAREWAVE
-	float hold = h;
+	    #ifdef TAUSQUAREWAVE
+	    float hold = h;
     	h = (sin(2.0f*M_PI*t/tausquarewave)>0)?(1.0f):(-1.0f);
     	h *= ampsquarewave; //AMPSQUAREWAVE;
     	if(h*hold < 0.0f){changesign = true; countsign++;}
