@@ -155,14 +155,18 @@ float ElasticEnergy(const thrust::device_vector<float>& phi) {
 int main(int argc, char **argv) {
 
     std::ofstream logout("log.txt");
+    unsigned long seed = 1234;
 
     #ifdef TAUSQUAREWAVE
     float tausquarewave = atof(argv[1]);
     float ampsquarewave = atof(argv[2]);
     logout << "square wave = (" << tausquarewave << "," << ampsquarewave << ")" << std::endl;
+    seed = atoi(argv[3]);
+    logout << "seed = " << seed << std::endl;
     #endif
 
     std::ofstream monitor_out("monitor.dat");
+
 
     int size = N * N;
     thrust::device_vector<float> phi(size);
@@ -177,8 +181,8 @@ int main(int argc, char **argv) {
         thrust::counting_iterator<int>(0),
         thrust::counting_iterator<int>(size),
         phi.begin(),
-        [] __host__ __device__ (int n) {
-            thrust::default_random_engine rng(1234);
+        [seed] __host__ __device__ (int n) {
+            thrust::default_random_engine rng(seed);
             thrust::uniform_real_distribution<float> dist(-1.0f, 1.0f);
             rng.discard(n);
 
@@ -200,8 +204,8 @@ int main(int argc, char **argv) {
         thrust::counting_iterator<int>(0),
         thrust::counting_iterator<int>(size),
         phi.begin(),
-        [] __host__ __device__ (int n) {
-            thrust::default_random_engine rng(1234);
+        [seed] __host__ __device__ (int n) {
+            thrust::default_random_engine rng(seed);
             thrust::uniform_real_distribution<float> dist(-1.0f, 1.0f);
             rng.discard(n);
 
@@ -243,8 +247,8 @@ int main(int argc, char **argv) {
         thrust::counting_iterator<int>(0),
         thrust::counting_iterator<int>(size),
         r_disorder.begin(),
-        [] __host__ __device__ (int i) {
-            thrust::default_random_engine rng(5678);
+        [seed] __host__ __device__ (int i) {
+            thrust::default_random_engine rng(seed);
             thrust::uniform_real_distribution<float> dist(-DISORDERAMP,DISORDERAMP);
             //thrust::uniform_real_distribution<float> dist(0.0,DISORDERAMP); //BUG pablo
             rng.discard(i);
